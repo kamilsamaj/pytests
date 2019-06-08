@@ -53,3 +53,77 @@ def initialized_tasks_db(tmpdir):
 
     # teardown = stop db
     tasks.stop_tasks_db()
+
+
+@pytest.mark.skipif(tasks.__version__ < '0.2.0',
+                    reason='not implented until version 0.2.0')
+def test_unique_id_1():
+    id_1 = tasks.unique_id()
+    id_2 = tasks.unique_id()
+    assert id_1 != id_2
+
+
+def test_unique_id_2():
+    ids = []
+    ids.append(tasks.add(Task('one')))
+    ids.append(tasks.add(Task('two')))
+    ids.append(tasks.add(Task('three')))
+    uid = tasks.unique_id()
+    assert uid not in ids
+
+
+@pytest.mark.xfail(reason='Demonstrate pytest.mark.xfail')
+def test_unique_id_is_a_duck():
+    uid = tasks.unique_id()
+    assert uid == 'a duck'
+
+
+@pytest.mark.xfail(reason='This actually will not fail')
+def test_unique_id_is_not_a_duck():
+    uid = tasks.unique_id()
+    assert uid != 'a duck'
+
+
+def test_add_1():
+    t = Task('breathe', 'Brian', True)
+    t_id = tasks.add(t)
+    t_from_db = tasks.get(t_id)
+    assert equivalent(t, t_from_db)
+
+
+@pytest.mark.parametrize('task',[
+    Task('sleep', done=True),
+    Task('wake', 'Brian'),
+    Task('breathe', 'BrIaN', True),
+    Task('exercise', 'Brian', False)
+])
+def test_add_2(task):
+    t = Task('breathe', 'Brian', True)
+    t_id = tasks.add(t)
+    t_from_db = tasks.get(t_id)
+    assert equivalent(t, t_from_db)
+
+
+@pytest.mark.parametrize('summary, owner, done', [
+    ('sleep', 'Brian', True),
+    ('wake', 'Brian', False),
+    ('breathe', 'BrIaN', True),
+    ('exercise', 'Brian', False)
+])
+def test_add_3(summary, owner, done):
+    t = Task(summary, owner, done)
+    t_id = tasks.add(t)
+    t_from_db = tasks.get(t_id)
+    assert equivalent(t, t_from_db)
+
+
+def equivalent(t1, t2):
+    """
+    Tasks are equivalent if all their attributes match but id
+    :param t1: Task
+    :param t2: Task
+    :return: Bool
+    """
+    return t1.summary == t2.summary and \
+        t1.owner == t2.owner and \
+        t1.done == t2.done
